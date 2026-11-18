@@ -5,7 +5,7 @@
   const params = new URLSearchParams(location.search);
   const DIR_CAT = '병동·다른 층', EVT_CAT = '행사';
   const CATEGORIES = ['진료과', '검사', '원무·수납', '편의시설', '출입구', DIR_CAT];
-  const APP_VERSION = '2026-11-18d';   // 배포 시 올리면 휴대폰 캐시가 새 3D 코드를 받는다
+  const APP_VERSION = '2026-11-18e';   // 배포 시 올리면 휴대폰 캐시가 새 3D 코드를 받는다
 
   // ---------- 데이터 ----------
   let map;
@@ -320,6 +320,22 @@
     setFold(false);   // 새 경로는 펼쳐서 보여 주고, 일정 시간 뒤 내려간다
   }
 
+  // 행사 현장 사진(photos: [{src, cap, at?}]) — at 이 있으면 그 출발점에서 올 때만 보여 준다
+  function eventPhotos(e) {
+    const list = (e.photos || []).filter(p => !p.at || p.at === state.start);
+    if (!list.length) return '';
+    return '<div class="evt-photos">' + list.map(p => `<figure><img src="${esc(p.src)}" alt="${esc(p.cap || '')}" loading="lazy" data-zoom="1"><figcaption>${esc(p.cap || '')}</figcaption></figure>`).join('') + '</div>';
+  }
+  $('#dirCard').addEventListener('click', ev => {
+    const im = ev.target.closest('img[data-zoom]');
+    if (!im) return;
+    const ov = document.createElement('div');
+    ov.className = 'photo-zoom';
+    ov.innerHTML = '<img src="' + im.getAttribute('src') + '" alt=""><span>탭하면 닫힙니다</span>';
+    ov.addEventListener('click', () => ov.remove());
+    document.body.appendChild(ov);
+  });
+
   // 다른 층 안내 카드(층 약도 + 대략 위치) / 행사 설명
   function renderDirCard(r, item) {
     const el = $('#dirCard');
@@ -333,7 +349,7 @@
     } else if (item.event && (item.event.desc || item.event.to)) {
       const e = item.event;
       el.innerHTML = `<div class="dir-title">${esc(e.name)} <span>행사</span></div>
-        ${e.desc ? `<p>${esc(e.desc)}</p>` : ''}${e.from || e.to ? `<div class="dir-src">기간: ${esc(e.from || '')} ~ ${esc(e.to || '')}</div>` : ''}`;
+        ${e.desc ? `<p>${esc(e.desc)}</p>` : ''}${e.from || e.to ? `<div class="dir-src">기간: ${esc(e.from || '')} ~ ${esc(e.to || '')}</div>` : ''}${eventPhotos(e)}`;
       el.hidden = false;
     } else { el.hidden = true; el.innerHTML = ''; }
   }
@@ -509,6 +525,7 @@
   if (q.value.trim()) q.dispatchEvent(new Event('input'));   // 로딩 중에 입력한 글자 반영
   if (atParam && !state.start) showMsg('QR 위치 정보를 찾을 수 없습니다. 현위치를 직접 골라 주세요.');
   const toKey = params.get('to');
+  if (/^EVT-/.test(toKey || '')) document.body.classList.add('evt-only');   // 행사 안내 화면: 다른 곳 검색 메뉴 숨김
   const toItem = toKey && index.find(it => it.key === toKey);
   if (toItem) {
     routeTo(toItem);                    // 현위치가 없으면(포스터 QR 등) 현위치를 고르게 한 뒤 이어서 안내
