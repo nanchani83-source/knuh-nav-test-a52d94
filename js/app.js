@@ -5,7 +5,7 @@
   const params = new URLSearchParams(location.search);
   const DIR_CAT = '병동·다른 층', EVT_CAT = '행사';
   const CATEGORIES = ['진료과', '검사', '원무·수납', '편의시설', '출입구', DIR_CAT];
-  const APP_VERSION = '2026-11-18b';   // 배포 시 올리면 휴대폰 캐시가 새 3D 코드를 받는다
+  const APP_VERSION = '2026-11-18c';   // 배포 시 올리면 휴대폰 캐시가 새 3D 코드를 받는다
 
   // ---------- 데이터 ----------
   let map;
