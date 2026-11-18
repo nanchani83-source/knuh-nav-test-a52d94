@@ -5,7 +5,7 @@
   const params = new URLSearchParams(location.search);
   const DIR_CAT = '병동·다른 층', EVT_CAT = '행사';
   const CATEGORIES = ['진료과', '검사', '원무·수납', '편의시설', '출입구', DIR_CAT];
-  const APP_VERSION = '2026-11-18c';   // 배포 시 올리면 휴대폰 캐시가 새 3D 코드를 받는다
+  const APP_VERSION = '2026-11-18d';   // 배포 시 올리면 휴대폰 캐시가 새 3D 코드를 받는다
 
   // ---------- 데이터 ----------
   let map;
@@ -317,6 +317,7 @@
       ? r.segments.map((s, i) => `<li><button type="button" data-seg="${i}">${i + 1}. ${esc(s.floorName)}</button></li>`).join('')
       : '';
     goSeg(0);
+    setFold(false);   // 새 경로는 펼쳐서 보여 주고, 일정 시간 뒤 내려간다
   }
 
   // 다른 층 안내 카드(층 약도 + 대략 위치) / 행사 설명
@@ -365,6 +366,7 @@
   $('#btnReset').addEventListener('click', () => {
     if (nav && nav.isOn()) nav.stop();
     state.route = null; state.item = null;
+    setFold(false);
     updateUrl();
     $('#routeView').hidden = true; $('#findView').hidden = false;
     q.value = ''; renderResults([]); setChip(null);
@@ -390,7 +392,7 @@
         nav = mod.create({
           g, root: $('#navBox'),
           onPos: showEst,
-          onStop: () => { estLayer.clearLayers(); $('#btnNav').hidden = false; },
+          onStop: () => { estLayer.clearLayers(); $('#btnNav').hidden = false; armFold(); },
           onNeedQr: () => showMsg('가까운 안내판의 QR을 찍으면 현위치가 정확해져요. 찍은 뒤 목적지를 다시 고르면 됩니다.'),
           onReplan: nodeId => { state.start = nodeId; distMap = null; updateUrl(); renderHere(); if (state.item) routeTo(state.item); },
         });
@@ -398,6 +400,7 @@
       const s = r.segments[state.seg];
       await nav.start(r, state.seg, state.seg === 0 && s.nodeIds[0] === state.start ? state.start : null);
       btn.hidden = true;
+      setFold(false);   // 방향 안내 중에는 자동으로 내려가지 않는다
     } catch (e) {
       showMsg('방향 안내를 켤 수 없어요: ' + (e.message || '이 휴대폰·주소(https)에서는 센서를 쓸 수 없습니다') + '. 지도 안내는 그대로 이용하실 수 있어요.');
     }
@@ -405,6 +408,43 @@
   }
   $('#btnNav').addEventListener('click', startNav);
   function navSync(i) { if (nav && nav.isOn()) { nav.setSegment(state.route, i, i === 0 && state.route.segments[0].nodeIds[0] === state.start ? state.start : null); estLayer.clearLayers(); } }
+
+  // ---------- 안내 패널 자동 내리기(휴대폰) ----------
+  // 경로 화면을 가리지 않도록 일정 시간 만지지 않으면 얇은 막대로 내려가고, 막대를 누르면 다시 올라온다.
+  const FOLD_MS = 10000;
+  let foldTimer = null;
+  const mobileLayout = () => !window.matchMedia('(min-width: 760px)').matches;
+  function refitRoute() {
+    if (!state.route) return;
+    const s = state.route.segments[state.seg];
+    if (!s || s.floor !== state.floor) return;
+    const f = fl(s.floor), pts = s.nodeIds.map(id => ll(g.nodes.get(id)));
+    let b = L.latLngBounds(pts).pad(0.12);
+    const minSpan = 35 / (f.metersPerPx || 0.1), c = b.getCenter();
+    if (b.getNorth() - b.getSouth() < minSpan && b.getEast() - b.getWest() < minSpan) {
+      b = L.latLngBounds([c.lat - minSpan / 2, c.lng - minSpan / 2], [c.lat + minSpan / 2, c.lng + minSpan / 2]);
+    }
+    lmap.fitBounds(b, { ...sheetPad(), maxZoom: 0, animate: true });
+  }
+  function armFold() {
+    clearTimeout(foldTimer);
+    if (!state.route || !mobileLayout() || (nav && nav.isOn()) || !$('#view3d').hidden) return;
+    foldTimer = setTimeout(() => setFold(true), FOLD_MS);
+  }
+  function setFold(on) {
+    clearTimeout(foldTimer);
+    const sheet = $('#sheet');
+    if (on && (!state.route || !mobileLayout())) on = false;
+    if (sheet.classList.contains('mini') === on) { if (!on) armFold(); return; }
+    if (on) $('#sheetMiniText').textContent = $('#destName').textContent + ' · 약 ' + state.route.meters + 'm';
+    sheet.classList.toggle('mini', on);
+    if (!on) armFold();
+    requestAnimationFrame(refitRoute);
+  }
+  $('#sheetMini').addEventListener('click', () => setFold(false));
+  $('#btnFold').addEventListener('click', () => setFold(true));
+  ['pointerdown', 'scroll', 'keydown'].forEach(ev =>
+    $('#sheet').addEventListener(ev, () => { if (!$('#sheet').classList.contains('mini')) armFold(); }, { passive: true }));
 
   // ---------- 3D ----------
   let view3d = null;
@@ -439,7 +479,7 @@
     if (state.avoidStairs) p.set('easy', '1');
     history.replaceState(null, '', location.pathname + (p.toString() ? '?' + p : ''));
   }
-  function showMsg(t) { const m = $('#msg'); m.textContent = t; m.hidden = false; }
+  function showMsg(t) { const m = $('#msg'); m.textContent = t; m.hidden = false; try { setFold(false); } catch (e) {} }
   function hideMsg() { $('#msg').hidden = true; }
   function esc(s) { return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
 

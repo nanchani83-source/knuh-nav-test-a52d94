@@ -95,6 +95,22 @@ button { font: inherit; cursor: pointer; }
 @media (min-width: 760px) {
   .sheet { left: 16px; right: auto; bottom: 16px; width: 400px; max-height: calc(100vh - 110px); border-radius: var(--radius); }
 }
+/* 경로 화면을 가리지 않도록 일정 시간 뒤 내려가는 안내(휴대폰 화면) */
+.head-btns { display: flex; gap: 6px; flex: none; }
+.sheet-mini { display: none; }
+@media (min-width: 760px) { .fold-btn { display: none; } }
+@media (max-width: 759px) {
+  .sheet.mini { max-height: none; overflow: hidden; padding-top: 8px; padding-bottom: calc(env(safe-area-inset-bottom) + 8px); }
+  .sheet.mini::before { margin-bottom: 6px; }
+  .sheet.mini > :not(.sheet-mini) { display: none !important; }
+  .sheet.mini .sheet-mini {
+    display: flex; width: 100%; align-items: center; justify-content: space-between; gap: 10px;
+    font: inherit; font-size: 16px; font-weight: 700; color: var(--ink); background: none; border: 0;
+    min-height: 44px; padding: 0 2px; cursor: pointer; text-align: left;
+  }
+  .sheet-mini > span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .sheet-mini .up { flex: none; font-size: 14px; color: var(--brand, #0b4f8a); }
+}
 .here { font-size: 15px; color: var(--ink-2); margin-bottom: 8px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .here b { color: var(--ink); }
 .here .dot { width: 12px; height: 12px; border-radius: 50%; background: var(--here); border: 2px solid #fff; box-shadow: 0 0 0 1px var(--here); flex: none; }
