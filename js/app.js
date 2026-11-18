@@ -5,7 +5,7 @@
   const params = new URLSearchParams(location.search);
   const DIR_CAT = '병동·다른 층', EVT_CAT = '행사';
   const CATEGORIES = ['진료과', '검사', '원무·수납', '편의시설', '출입구', DIR_CAT];
-  const APP_VERSION = '2026-11-17b';   // 배포 시 올리면 휴대폰 캐시가 새 3D 코드를 받는다
+  const APP_VERSION = '2026-11-18b';   // 배포 시 올리면 휴대폰 캐시가 새 3D 코드를 받는다
 
   // ---------- 데이터 ----------
   let map;
@@ -190,15 +190,19 @@
   });
 
   // ---------- 현위치 ----------
-  function renderHere() {
+  function renderHere(picking) {
     const el = $('#hereLine');
-    if (state.start) {
+    if (state.start && !picking) {
       const n = g.nodes.get(state.start);
-      el.innerHTML = `<span class="dot"></span><span>현위치 <b>${esc(fl(n.floor).name)} · ${esc(n.label || '')}</b></span>`;
+      el.innerHTML = `<span class="dot"></span><span>현위치 <b>${esc(fl(n.floor).name)} · ${esc(n.label || '이 안내판 앞')}</b></span>
+        <button type="button" class="link-btn" id="btnChangeHere">현위치 바꾸기</button>`;
+      $('#btnChangeHere').addEventListener('click', () => renderHere(true));
     } else {
-      const opts = startNodes.map(n => `<option value="${n.id}">${esc(fl(n.floor).name)} · ${esc(n.label || n.id)}</option>`).join('');
-      el.innerHTML = `<span>현위치를 고르세요 (QR을 찍으면 자동으로 표시됩니다)</span>
-        <select id="pickStart" aria-label="현위치 선택"><option value="">— 현위치 선택 —</option>${opts}</select>`;
+      const opts = startNodes.map(n => `<option value="${n.id}"${n.id === state.start ? ' selected' : ''}>${esc(fl(n.floor).name)} · ${esc(n.label || n.id)}</option>`).join('');
+      el.innerHTML = `<span>${state.start ? '바뀐 현위치를 고르세요' : '현위치를 고르세요 (QR을 찍으면 자동으로 표시됩니다)'}</span>
+        <select id="pickStart" aria-label="현위치 선택"><option value="">— 현위치 선택 —</option>${opts}</select>
+        ${state.start ? '<button type="button" class="link-btn" id="btnCancelHere">취소</button>' : ''}`;
+      if (state.start) $('#btnCancelHere').addEventListener('click', () => renderHere());
       $('#pickStart').addEventListener('change', e => {
         if (!e.target.value) return;
         state.start = e.target.value;
@@ -466,7 +470,14 @@
   if (atParam && !state.start) showMsg('QR 위치 정보를 찾을 수 없습니다. 현위치를 직접 골라 주세요.');
   const toKey = params.get('to');
   const toItem = toKey && index.find(it => it.key === toKey);
-  if (toItem) routeTo(toItem);          // 현위치가 없으면(행사 포스터 QR 등) 현위치를 고르게 한 뒤 이어서 안내
-  else if (toKey && /^EVT-/.test(toKey)) showMsg('이 행사는 종료되었거나 아직 시작하지 않았습니다.');
+  if (toItem) {
+    routeTo(toItem);                    // 현위치가 없으면(포스터 QR 등) 현위치를 고르게 한 뒤 이어서 안내
+    // 고정 목적지 QR(?at=…&to=…): 이 QR이 정해 준 목적지임을 알려 준다
+    if (state.route && atParam) $('#summary').textContent = 'QR 안내 · ' + $('#summary').textContent;
+  } else if (toKey) {
+    showMsg(/^EVT-/.test(toKey)
+      ? '이 행사는 종료되었거나 아직 시작하지 않았습니다. 가고 싶은 곳을 검색해 주세요.'
+      : '이 QR이 가리키는 목적지를 찾을 수 없습니다. 가고 싶은 곳을 검색해 주세요.');
+  }
   window.addEventListener('resize', () => { if (state.route) goSeg(state.seg); });
 })();

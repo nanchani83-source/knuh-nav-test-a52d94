@@ -18,7 +18,7 @@ export function create(ctx) {
   const debug = new URLSearchParams(location.search).get('debug') === '1';
   const cfg = load();
 
-  function load() { try { return { sound: false, voice: false, sens: 'mid', ...JSON.parse(localStorage.getItem('wf-nav') || '{}') }; } catch (e) { return { sound: false, voice: false, sens: 'mid' }; } }
+  function load() { try { return { sound: true, voice: true, sens: 'mid', ...JSON.parse(localStorage.getItem('wf-nav') || '{}') }; } catch (e) { return { sound: true, voice: true, sens: 'mid' }; } }
   function save() { try { localStorage.setItem('wf-nav', JSON.stringify(cfg)); } catch (e) {} }
 
   // ---------- 화면 ----------

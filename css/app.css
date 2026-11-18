@@ -98,6 +98,7 @@ button { font: inherit; cursor: pointer; }
 .here { font-size: 15px; color: var(--ink-2); margin-bottom: 8px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .here b { color: var(--ink); }
 .here .dot { width: 12px; height: 12px; border-radius: 50%; background: var(--here); border: 2px solid #fff; box-shadow: 0 0 0 1px var(--here); flex: none; }
+.here .link-btn { font: inherit; font-size: 14px; font-weight: 700; color: var(--brand, #0b4f8a); background: none; border: 0; padding: 6px 4px; min-height: 36px; text-decoration: underline; cursor: pointer; }
 .here select { font: inherit; font-size: 16px; padding: 8px; border-radius: 10px; border: 1.5px solid var(--line); max-width: 100%; }
 
 .search { display: flex; align-items: center; gap: 8px; border: 2px solid var(--brand); border-radius: 14px; padding: 0 12px; background: #fff; }
